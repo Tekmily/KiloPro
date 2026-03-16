@@ -1,1 +1,299 @@
 
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HepatoFit Elite - Biyolojik Analitik Sistem</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --emerald: #10b981; --sapphire: #3b82f6; --rose: #f43f5e; --dark: #070a13; }
+        body { background-color: var(--dark); color: white; font-family: 'Inter', sans-serif; overflow: hidden; height: 100vh; }
+        .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(25px); border: 1px solid rgba(255,255,255,0.08); border-radius: 2.5rem; }
+        
+        /* Kart Animasyonları */
+        .card-stack { position: relative; width: 100%; max-width: 420px; height: 620px; perspective: 1000px; }
+        .meal-card { 
+            position: absolute; width: 100%; height: 100%; 
+            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+            opacity: 0; pointer-events: none; transform: scale(0.9) translateY(20px);
+        }
+        .meal-card.active { opacity: 1; pointer-events: auto; transform: scale(1) translateY(0); z-index: 20; }
+        .meal-card.prev { transform: translateX(-110%) rotate(-10deg); opacity: 0; }
+        .meal-card.next { transform: translateX(110%) rotate(10deg); opacity: 0; }
+
+        .stamp {
+            position: absolute; top: 30px; right: 30px; border: 4px solid var(--emerald);
+            color: var(--emerald); padding: 8px 20px; font-weight: 900; border-radius: 15px;
+            transform: rotate(15deg); background: rgba(7, 10, 19, 0.9); z-index: 50;
+        }
+
+        .dot { width: 10px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.1); transition: 0.4s; }
+        .dot.active { width: 30px; background: var(--emerald); }
+        .dot.done { background: var(--sapphire); }
+
+        /* Scrollbar Gizleme */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="flex justify-center items-center">
+
+    <div id="setup-screen" class="fixed inset-0 z-[100] bg-[#070a13] p-10 flex flex-col justify-center items-center">
+        <div class="w-full max-w-md glass p-10 space-y-6 text-center">
+            <h1 class="text-4xl font-black italic tracking-tighter text-emerald-500">HEPATOFIT <span class="text-white opacity-40">3.0</span></h1>
+            <p class="text-gray-400 text-xs uppercase tracking-widest">Grade 1/2 Karaciğer Rejenerasyon Programı</p>
+            <div class="space-y-4 text-left">
+                <input type="text" id="uName" placeholder="Ad Soyad" class="w-full p-5 rounded-3xl bg-white/5 outline-none border border-white/10 focus:border-emerald-500 transition">
+                <div class="flex gap-4">
+                    <select id="uGender" class="w-1/2 p-5 rounded-3xl bg-white/5 border border-white/10 outline-none">
+                        <option value="male">Erkek</option>
+                        <option value="female">Kadın</option>
+                    </select>
+                    <input type="number" id="uWeight" placeholder="Kilo (kg)" class="w-1/2 p-5 rounded-3xl bg-white/5 border border-white/10">
+                </div>
+                <button onclick="logic.init()" class="w-full bg-emerald-600 p-5 rounded-3xl font-black shadow-2xl shadow-emerald-600/20 active:scale-95 transition">SİSTEMİ AKTİVE ET</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="main-app" class="hidden w-full h-full flex flex-col max-w-2xl mx-auto p-6">
+        <header class="flex justify-between items-center mb-8">
+            <div class="flex items-center gap-4">
+                <div id="avatar" class="w-14 h-14 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-xl font-bold"></div>
+                <div>
+                    <h2 id="display-name" class="font-black text-xl leading-none">--</h2>
+                    <span id="display-day" class="text-[10px] text-emerald-500 font-bold tracking-widest uppercase">GÜN 1</span>
+                </div>
+            </div>
+            <div id="nav-dots" class="flex gap-2"></div>
+        </header>
+
+        <main class="flex-1 flex items-center justify-center relative">
+            <div id="card-stack" class="card-stack"></div>
+        </main>
+
+        <footer class="h-32 flex flex-col items-center justify-center gap-4">
+            <div id="action-area" class="flex gap-6 items-center"></div>
+            <p id="logic-feedback" class="text-[10px] text-gray-500 uppercase font-bold tracking-widest text-center"></p>
+        </footer>
+    </div>
+
+    <script>
+        const logic = {
+            user: JSON.parse(localStorage.getItem('hf_user')),
+            status: JSON.parse(localStorage.getItem('hf_status')) || { day: 1, meals: [0,0,0,0,0] },
+            currentIdx: 0,
+            
+            getMealData() {
+                const isM = this.user.gender === 'male';
+                return [
+                    { h: 7, m: 30, t: "Aç Karnına Kardiyo", d: "20dk Tempolu Yürüyüş", p: "Kalori Yakımı: ~250kcal", n: "Sabah açlığı karaciğer yağlarını enerji olarak kullanmaya zorlar.", i: "fa-running", cal: 250 },
+                    { h: 9, m: 0, t: "Yüksek Proteinli Kahvaltı", d: isM ? "3 Yumurta + 100g Lor" : "2 Yumurta + 50g Lor", p: "Protein: 30-40g", n: "Kolin içeriği sayesinde karaciğerden yağ taşınımını hızlandırır.", i: "fa-egg", cal: 350 },
+                    { h: 13, m: 0, t: "Düşük Glisemik Öğle", d: isM ? "180g Izgara Tavuk + Sebze" : "120g Izgara Tavuk + Sebze", p: "Fruktoz: 0g", n: "Grade 1/2 iyileşmesi için insülin seviyesi düşük tutulmalıdır.", i: "fa-utensils", cal: 400 },
+                    { h: 16, m: 30, t: "Karaciğer Koruyucu Ara", d: "3 Tam Ceviz + Yeşil Çay", p: "E Vitamini + Omega-3", n: "Cevizdeki polifenoller oksidatif stresi azaltır.", i: "fa-leaf", cal: 150 },
+                    { h: 19, m: 30, t: "Akşam Detoks Kapanışı", d: "Zeytinyağlı Enginar + Yoğurt", p: "Sinarin: Aktif", n: "Enginar, karaciğer rejenerasyonu için tıbbi besindir.", i: "fa-moon", cal: 300 }
+                ];
+            },
+
+            init() {
+                const name = document.getElementById('uName').value;
+                const gender = document.getElementById('uGender').value;
+                const weight = document.getElementById('uWeight').value;
+                if(!name || !weight) return alert("Eksik bilgi!");
+
+                this.user = { name, gender, weight: parseInt(weight) };
+                localStorage.setItem('hf_user', JSON.stringify(this.user));
+                this.render();
+            },
+
+            render() {
+                if(!this.user) return;
+                document.getElementById('setup-screen').style.display = 'none';
+                document.getElementById('main-app').classList.remove('hidden');
+                document.getElementById('display-name').innerText = this.user.name.split(' ')[0];
+                document.getElementById('avatar').innerText = this.user.name[0];
+                document.getElementById('display-day').innerText = `GÜN ${this.status.day}`;
+                
+                this.updateCards();
+                this.updateDots();
+                this.updateControls();
+            },
+
+            updateCards() {
+                const container = document.getElementById('card-stack');
+                container.innerHTML = '';
+                const meals = this.getMealData();
+                const isAllDone = this.status.meals.every(m => m === 1);
+
+                if (isAllDone && this.currentIdx === meals.length) {
+                    this.renderAnalysis(container);
+                    return;
+                }
+
+                meals.forEach((meal, i) => {
+                    const card = document.createElement('div');
+                    card.className = `meal-card glass p-10 flex flex-col ${i === this.currentIdx ? 'active' : (i < this.currentIdx ? 'prev' : 'next')}`;
+                    const done = this.status.meals[i] === 1;
+
+                    card.innerHTML = `
+                        ${done ? '<div class="stamp">ONAYLANDI</div>' : ''}
+                        <div class="flex justify-between items-start mb-8">
+                            <div class="bg-emerald-500/20 text-emerald-400 px-5 py-2 rounded-2xl font-mono font-bold">
+                                ${String(meal.h).padStart(2,'0')}:${String(meal.m).padStart(2,'0')}
+                            </div>
+                            <div class="w-16 h-16 bg-white/5 rounded-3xl flex items-center justify-center text-3xl opacity-30">
+                                <i class="fas ${meal.icon}"></i>
+                            </div>
+                        </div>
+                        <h3 class="text-3xl font-black mb-2 leading-tight uppercase italic">${meal.t}</h3>
+                        <p class="text-emerald-400 font-bold text-lg mb-8">${meal.d}</p>
+                        
+                        <div class="space-y-6 flex-1 no-scrollbar overflow-y-auto">
+                            <div class="p-5 bg-white/5 rounded-3xl border border-white/5">
+                                <span class="text-[10px] text-gray-500 font-black uppercase tracking-widest block mb-2">Makro Odak</span>
+                                <p class="text-sm">${meal.p}</p>
+                            </div>
+                            <div class="p-5 bg-emerald-500/10 border-l-4 border-emerald-500 rounded-r-3xl">
+                                <span class="text-[10px] text-emerald-500 font-black uppercase block mb-1">Neden Bu Besin?</span>
+                                <p class="text-xs text-gray-300 italic leading-relaxed">${meal.note}</p>
+                            </div>
+                            <div class="p-4 bg-rose-500/5 rounded-2xl text-[10px] text-gray-500 flex gap-3">
+                                <i class="fas fa-ban text-rose-500 text-sm"></i>
+                                <span>Bu öğünde fruktoz içeren soslar ve rafine şeker kesinlikle yasaktır.</span>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            },
+
+            renderAnalysis(container) {
+                const meals = this.getMealData();
+                const totalCal = meals.reduce((a,b) => a + b.cal, 0);
+                const weightLoss = (this.user.weight * 0.005).toFixed(2); // Temsili günlük kayıp
+
+                const card = document.createElement('div');
+                card.className = 'meal-card active glass p-8 flex flex-col overflow-y-auto';
+                card.innerHTML = `
+                    <h3 class="text-2xl font-black text-center mb-6 italic">GÜNLÜK PERFORMANS</h3>
+                    <div class="relative mb-8 h-48">
+                        <canvas id="chartArea"></canvas>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mb-8">
+                        <div class="bg-white/5 p-4 rounded-3xl text-center">
+                            <p class="text-[10px] text-gray-500 font-bold uppercase">Net Kalori</p>
+                            <p class="text-xl font-black text-emerald-400">-${totalCal + 200}</p>
+                        </div>
+                        <div class="bg-white/5 p-4 rounded-3xl text-center">
+                            <p class="text-[10px] text-gray-500 font-bold uppercase">KC Detoks</p>
+                            <p class="text-xl font-black text-blue-400">%96</p>
+                        </div>
+                    </div>
+                    <div class="bg-emerald-500/10 p-5 rounded-3xl border border-emerald-500/20 text-xs leading-relaxed text-gray-300 mb-6">
+                        <b>AI Analizi:</b> Bugün fruktoz blokajı yaparak karaciğerinizi 14 saat boyunca dinlendirdiniz. Grade 1/2 gerilemesi için optimal ketozis başlatıldı. Tahmini ödem kaybı: <b>${weightLoss}kg.</b>
+                    </div>
+                    <button onclick="logic.finishDay()" class="w-full bg-white text-black py-5 rounded-3xl font-black uppercase tracking-widest hover:bg-emerald-500 hover:text-white transition">YARINA GEÇİŞ YAP</button>
+                `;
+                container.appendChild(card);
+                this.initChart();
+            },
+
+            initChart() {
+                setTimeout(() => {
+                    const ctx = document.getElementById('chartArea').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: ['Sabah', 'Öğle', 'Ara', 'Akşam'],
+                            datasets: [{
+                                label: 'İnsülin Dengesi',
+                                data: [10, 15, 12, 8],
+                                borderColor: '#10b981',
+                                tension: 0.4,
+                                fill: true,
+                                backgroundColor: 'rgba(16, 185, 129, 0.1)'
+                            }]
+                        },
+                        options: { plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { grid: { display: false }, ticks: { color: '#666' } } } }
+                    });
+                }, 100);
+            },
+
+            updateDots() {
+                const container = document.getElementById('nav-dots');
+                container.innerHTML = this.status.meals.map((s, i) => 
+                    `<div class="dot ${s === 1 ? 'done' : ''} ${i === this.currentIdx ? 'active' : ''}"></div>`
+                ).join('');
+            },
+
+            updateControls() {
+                const area = document.getElementById('action-area');
+                const feedback = document.getElementById('logic-feedback');
+                const meals = this.getMealData();
+                
+                if(this.currentIdx >= meals.length) {
+                    area.innerHTML = '';
+                    feedback.innerText = "GÜN TAMAMLANDI - ANALİZ HAZIR";
+                    return;
+                }
+
+                const isDone = this.status.meals[this.currentIdx] === 1;
+                
+                if(isDone) {
+                    area.innerHTML = `<button onclick="logic.setStatus(0)" class="bg-rose-500/10 text-rose-500 border border-rose-500/20 px-10 py-4 rounded-2xl font-bold text-xs uppercase">Seçimi İptal Et</button>`;
+                    feedback.innerText = "Bu öğün başarıyla tamamlandı.";
+                } else {
+                    area.innerHTML = `
+                        <button onclick="logic.move(-1)" class="w-14 h-14 glass flex items-center justify-center"><i class="fas fa-chevron-left"></i></button>
+                        <button onclick="logic.setStatus(1)" class="bg-emerald-600 px-12 py-5 rounded-3xl font-black shadow-xl shadow-emerald-600/20">YAPTIM!</button>
+                        <button onclick="logic.move(1)" class="w-14 h-14 glass flex items-center justify-center"><i class="fas fa-chevron-right"></i></button>
+                    `;
+                    feedback.innerText = `${meals[this.currentIdx].t} için onay bekleniyor.`;
+                }
+            },
+
+            setStatus(val) {
+                const meals = this.getMealData();
+                const m = meals[this.currentIdx];
+                const now = new Date();
+                const currentT = now.getHours() * 60 + now.getMinutes();
+                const mealT = m.h * 60 + m.m;
+
+                if (val === 1 && currentT < mealT - 15) {
+                    alert(`SAAT HATASI: ${m.t} için henüz vaktin var (${m.h}:${m.m}). Karaciğerin biyolojik ritmine uyman iyileşme sürecini %40 hızlandırır.`);
+                    return;
+                }
+
+                this.status.meals[this.currentIdx] = val;
+                localStorage.setItem('hf_status', JSON.stringify(this.status));
+                
+                if(val === 1 && this.currentIdx < meals.length) {
+                    this.currentIdx++;
+                }
+                
+                this.render();
+            },
+
+            move(dir) {
+                const target = this.currentIdx + dir;
+                if(target >= 0 && target <= 5) {
+                    this.currentIdx = target;
+                    this.render();
+                }
+            },
+
+            finishDay() {
+                this.status.day++;
+                this.status.meals = [0,0,0,0,0];
+                this.currentIdx = 0;
+                localStorage.setItem('hf_status', JSON.stringify(this.status));
+                location.reload();
+            }
+        };
+
+        if(logic.user) logic.render();
+    </script>
+</body>
+</html>
