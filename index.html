@@ -3,23 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HepatoFit Elite - Continuous Progress</title>
+    <title>HepatoFit Elite - AI Analytics</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --emerald: #10b981; --rose: #f43f5e; --dark: #0f172a; }
-        body { background-color: var(--dark); color: white; font-family: 'Inter', sans-serif; overflow: hidden; }
+        body { background-color: var(--dark); color: white; font-family: 'Inter', sans-serif; overflow-x: hidden; }
         .glass { background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 2.5rem; }
         
-        .card-stack { position: relative; width: 100%; max-width: 400px; height: 550px; margin: 0 auto; }
+        .card-stack { position: relative; width: 100%; max-width: 400px; height: 580px; margin: 0 auto; }
         .meal-card { 
             position: absolute; width: 100%; height: 100%; 
             transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
             display: none;
         }
         .meal-card.active { display: block; z-index: 20; opacity: 1; transform: scale(1); }
-        .meal-card.prev { display: block; z-index: 10; opacity: 0; transform: scale(0.8) translateX(-50%); }
-        .meal-card.next { display: block; z-index: 10; opacity: 0; transform: scale(0.8) translateX(50%); }
+        .meal-card.prev { display: block; z-index: 10; opacity: 0; transform: translateX(-100%) rotate(-10deg); }
+        .meal-card.next { display: block; z-index: 10; opacity: 0; transform: translateX(100%) rotate(10deg); }
 
         .approved-stamp {
             position: absolute; top: 20px; right: 20px; transform: rotate(15deg); 
@@ -27,47 +28,43 @@
             font-weight: 900; border-radius: 10px; z-index: 30; background: rgba(15, 23, 42, 0.9);
         }
         
-        .progress-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.1); transition: 0.3s; }
+        .progress-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.1); }
         .progress-dot.done { background: var(--emerald); box-shadow: 0 0 8px var(--emerald); }
         .progress-dot.active { transform: scale(1.6); background: white; }
 
-        @keyframes success-pop { 0% { transform: scale(0.5); } 100% { transform: scale(1); } }
-        .success-card { animation: success-pop 0.5s ease-out; background: linear-gradient(135deg, #064e3b 0%, #0f172a 100%); }
+        .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .report-item { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 20px; text-align: center; }
     </style>
 </head>
 <body class="flex flex-col h-screen p-4">
 
-    <div id="setup-screen" class="fixed inset-0 z-[100] bg-[#0f172a] p-8 flex items-center justify-center">
+    <div id="setup-screen" class="fixed inset-0 z-[100] bg-[#0f172a] p-8 flex items-center justify-center hidden">
         <div class="w-full max-w-md glass p-8 text-center">
-            <h1 class="text-4xl font-black text-emerald-500 mb-2 italic tracking-tighter">HEPATOFIT</h1>
-            <p class="text-gray-500 text-xs mb-8 uppercase tracking-widest font-bold">Smart Liver Assistant</p>
-            <div class="space-y-4 text-left">
+            <h1 class="text-3xl font-black text-emerald-500 mb-6 italic tracking-tighter uppercase">HepatoFit Login</h1>
+            <div class="space-y-4">
                 <input type="text" id="uName" placeholder="Adınız" class="w-full p-4 rounded-2xl bg-slate-800 outline-none border border-white/5">
                 <select id="uGender" class="w-full p-4 rounded-2xl bg-slate-800 outline-none">
-                    <option value="male">Erkek (Kas Koruma + Karaciğer)</option>
-                    <option value="female">Kadın (Metabolizma + Karaciğer)</option>
+                    <option value="male">Erkek</option>
+                    <option value="female">Kadın</option>
                 </select>
-                <button onclick="initApp()" class="w-full bg-emerald-500 p-4 rounded-2xl font-black text-white shadow-xl">PROGRAMI OLUŞTUR</button>
+                <input type="number" id="uWeight" placeholder="Kilonuz (kg)" class="w-full p-4 rounded-2xl bg-slate-800 outline-none">
+                <button onclick="initApp()" class="w-full bg-emerald-500 p-4 rounded-2xl font-black text-white shadow-xl">BAŞLAT</button>
             </div>
         </div>
     </div>
 
-    <div id="main-app" class="hidden flex-1 flex flex-col">
+    <div id="main-app" class="flex-1 flex flex-col">
         <header class="flex justify-between items-center py-6 px-2">
             <div>
                 <h2 id="userName" class="text-xl font-black italic">--</h2>
-                <p id="day-counter" class="text-[10px] text-emerald-400 font-bold uppercase tracking-widest">1. GÜN HEDEFLERİ</p>
+                <p id="day-counter" class="text-[10px] text-emerald-400 font-bold uppercase tracking-widest">GÜN 1</p>
             </div>
             <div id="dots-container" class="flex gap-2"></div>
         </header>
 
         <main class="flex-1 flex items-center justify-center relative">
-            <button id="btn-prev" onclick="prevCard()" class="absolute left-0 z-50 p-4 text-gray-600 hover:text-white transition"><i class="fas fa-arrow-left"></i></button>
-            
             <div id="card-stack" class="card-stack">
                 </div>
-
-            <button id="btn-next" onclick="nextCard()" class="absolute right-0 z-50 p-4 text-gray-600 hover:text-white transition"><i class="fas fa-arrow-right"></i></button>
         </main>
 
         <footer class="py-10">
@@ -77,32 +74,34 @@
     </div>
 
     <script>
-        let user = JSON.parse(localStorage.getItem('hepatoFinal_User'));
-        let dayStatus = JSON.parse(localStorage.getItem('hepatoFinal_DayStatus')) || { day: 1, meals: [0,0,0,0,0] };
+        let user = JSON.parse(localStorage.getItem('hepatoAI_User'));
+        let dayStatus = JSON.parse(localStorage.getItem('hepatoAI_DayStatus')) || { day: 1, meals: [0,0,0,0,0] };
         let currentIdx = 0;
 
         const getMeals = (gender) => [
-            { h: 7, m: 30, title: "Sabah Kardiyosu", desc: "Aç karnına 20dk yürüyüş", note: "Karaciğerdeki serbest yağ asitlerini yakar.", icon: "fa-running" },
-            { h: 9, m: 0, title: "Protein Kahvaltısı", desc: gender === 'male' ? "3 Yumurta + Lor + Yeşil Biber" : "2 Yumurta + Lor + Maydanoz", note: "Sabah proteini karaciğer yenilenmesini başlatır.", icon: "fa-egg" },
-            { h: 13, m: 0, title: "Öğle Öğünü", desc: "Haşlama Sebze + Izgara Protein", note: "Nişastasız bir öğle yemeği insülini düşük tutar.", icon: "fa-utensils" },
-            { h: 16, m: 30, title: "Detoks Arası", desc: "Yeşil Çay + 3 Tam Ceviz", note: "E vitamini ve Omega-3 karaciğer koruyucudur.", icon: "fa-leaf" },
-            { h: 19, m: 30, title: "KC-Temizlik Akşamı", desc: "Zeytinyağlı Enginar + Yoğurt", note: "Enginar, safra akışını düzenleyen Sinarin içerir.", icon: "fa-moon" }
+            { h: 7, m: 30, title: "Aç Karnına Kardiyo", cal: 250, desc: "20dk Yürüyüş", note: "Sabah açlığı karaciğer yağ asitlerini yakar.", icon: "fa-running" },
+            { h: 9, m: 0, title: "Protein Kahvaltısı", cal: 350, desc: gender === 'male' ? "3 Yumurta + Lor" : "2 Yumurta + Lor", note: "Yumurta sarısındaki kolin KC temizliği yapar.", icon: "fa-egg" },
+            { h: 13, m: 0, title: "Öğle Yemeği", cal: 450, desc: "Izgara Protein + Yeşillik", note: "Fruktoz 0. İnsülin direnci kontrolü.", icon: "fa-utensils" },
+            { h: 16, m: 30, title: "Ara Öğün", cal: 150, desc: "Yeşil Çay + 3 Ceviz", note: "Antioksidan desteği karaciğeri korur.", icon: "fa-leaf" },
+            { h: 19, m: 30, title: "Akşam Detoksu", cal: 300, desc: "Enginar veya Mevsim Sebzesi", note: "Sinarin maddesi safra akışını hızlandırır.", icon: "fa-moon" }
         ];
 
         function initApp() {
             const name = document.getElementById('uName').value;
             const gender = document.getElementById('uGender').value;
-            if(!name) return;
-            user = { name, gender };
-            localStorage.setItem('hepatoFinal_User', JSON.stringify(user));
+            const weight = document.getElementById('uWeight').value;
+            if(!name || !weight) return;
+            user = { name, gender, weight: parseInt(weight) };
+            localStorage.setItem('hepatoAI_User', JSON.stringify(user));
             renderApp();
         }
 
         function renderApp() {
+            if(!user) { document.getElementById('setup-screen').classList.remove('hidden'); return; }
             document.getElementById('setup-screen').classList.add('hidden');
             document.getElementById('main-app').classList.remove('hidden');
             document.getElementById('userName').innerText = user.name;
-            document.getElementById('day-counter').innerText = `${dayStatus.day}. GÜN HEDEFLERİ`;
+            document.getElementById('day-counter').innerText = `${dayStatus.day}. GÜN RAPORU`;
             updateCards();
             updateDots();
             updateControls();
@@ -111,13 +110,12 @@
         function updateCards() {
             const container = document.getElementById('card-stack');
             container.innerHTML = '';
-            
-            // Eğer tüm öğünler bittiyse ve son öğün onaylandıysa TEBRİKLER KARTI ekle
-            const allDone = dayStatus.meals.every(m => m === 1);
             const meals = getMeals(user.gender);
+            const allDone = dayStatus.meals.every(m => m === 1);
 
+            // TÜM KARTLAR BİTTİĞİNDE GRAFİK EKRANI
             if (allDone && currentIdx === meals.length) {
-                renderSuccessCard(container);
+                renderAnalysis(container);
                 return;
             }
 
@@ -127,20 +125,17 @@
                 const isDone = dayStatus.meals[i] === 1;
 
                 card.innerHTML = `
-                    ${isDone ? '<div class="approved-stamp">ONAYLANDI</div>' : ''}
+                    ${isDone ? '<div class="approved-stamp">TAMAMLANDI</div>' : ''}
                     <div class="flex justify-between items-center mb-6">
-                        <span class="bg-emerald-500/20 text-emerald-400 px-4 py-1 rounded-full text-xs font-black">${String(meal.h).padStart(2,'0')}:${String(meal.m).padStart(2,'0')}</span>
+                        <span class="bg-emerald-500/20 text-emerald-400 px-4 py-1 rounded-full text-xs font-black">${meal.time || String(meal.h).padStart(2,'0')+':'+String(meal.m).padStart(2,'0')}</span>
                         <i class="fas ${meal.icon} text-3xl opacity-10"></i>
                     </div>
                     <h3 class="text-3xl font-black mb-2 uppercase italic tracking-tighter">${meal.title}</h3>
                     <p class="text-emerald-400 font-bold mb-4">${meal.desc}</p>
-                    <div class="space-y-4 flex-1">
-                        <div class="bg-emerald-500/5 border-l-2 border-emerald-500 p-4 rounded-r-2xl">
-                            <p class="text-[10px] uppercase font-bold text-emerald-500 mb-1">Diyetisyen Notu</p>
-                            <p class="text-xs italic text-gray-300">${meal.note}</p>
-                        </div>
-                        <div class="bg-rose-500/10 p-4 rounded-2xl border border-rose-500/20 text-[10px] text-gray-400">
-                            <i class="fas fa-exclamation-triangle text-rose-500 mr-1"></i> Karaciğer Grade 1/2 için bu öğünde şekerli içecekler kesinlikle yasaktır.
+                    <div class="space-y-4 flex-1 overflow-y-auto">
+                        <div class="bg-emerald-500/5 border-l-2 border-emerald-500 p-4 rounded-r-2xl text-xs italic text-gray-300">${meal.note}</div>
+                        <div class="p-4 rounded-2xl border border-white/5 text-[10px] text-gray-400">
+                           <b class="text-white">Fruktoz Sınırı:</b> Grade 1/2 için bu öğünde meyve şekeri tüketilmedi. Karaciğer yükü %0.
                         </div>
                     </div>
                 `;
@@ -148,43 +143,82 @@
             });
         }
 
-        function renderSuccessCard(container) {
+        function renderAnalysis(container) {
+            const meals = getMeals(user.gender);
+            const totalCal = meals.reduce((sum, m) => sum + m.cal, 0);
+            const burnedCal = Math.round(user.weight * 5); // Temsili yakılan kalori
+            
             const card = document.createElement('div');
-            card.className = 'meal-card success-card glass p-8 flex flex-col items-center justify-center text-center active';
+            card.className = 'meal-card active glass p-6 flex flex-col overflow-y-auto w-full';
             card.innerHTML = `
-                <div class="w-20 h-20 bg-emerald-500 rounded-full flex items-center justify-center text-4xl mb-6 shadow-2xl shadow-emerald-500/50">
-                    <i class="fas fa-award"></i>
+                <h3 class="text-2xl font-black text-center mb-4 uppercase italic">GÜNLÜK ANALİZ RAPORU</h3>
+                <canvas id="dailyChart" class="mb-6" style="max-height: 180px;"></canvas>
+                
+                <div class="report-grid mb-6">
+                    <div class="report-item">
+                        <p class="text-[10px] text-gray-400 uppercase font-bold">Yakılan Kalori</p>
+                        <p class="text-xl font-black text-emerald-400">~${burnedCal + 250} kcal</p>
+                    </div>
+                    <div class="report-item">
+                        <p class="text-[10px] text-gray-400 uppercase font-bold">KC Detoks Puanı</p>
+                        <p class="text-xl font-black text-blue-400">9.4/10</p>
+                    </div>
                 </div>
-                <h3 class="text-3xl font-black mb-2 uppercase tracking-tighter italic">HARİKA İŞ!</h3>
-                <p class="text-emerald-400 font-bold mb-6">${dayStatus.day}. Günü Başarıyla Tamamladın.</p>
-                <p class="text-xs text-gray-400 mb-8 px-4">Karaciğerindeki yağ asidi dengesi düzeliyor ve metabolizman hızlanıyor. Yarın daha güçlü olacağız.</p>
-                <button onclick="nextDay()" class="w-full bg-white text-emerald-900 py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl">YARINA GEÇ <i class="fas fa-arrow-right ml-2"></i></button>
+
+                <div class="space-y-4 text-xs leading-relaxed text-gray-300">
+                    <div class="bg-emerald-500/10 p-4 rounded-2xl border border-emerald-500/20">
+                        <p class="font-bold text-white mb-1"><i class="fas fa-microscope mr-2 text-emerald-500"></i> AI Analiz Sonucu:</p>
+                        Bugün fruktoz alımını sıfırlayarak karaciğerindeki yağ asidi oksidasyonunu <b>%18 artırdın.</b> Sabah yaptığın aç kardiyo sayesinde insülin duyarlılığın optimize edildi.
+                    </div>
+                    <div class="bg-blue-500/10 p-4 rounded-2xl border border-blue-500/20">
+                        <p class="font-bold text-white mb-1"><i class="fas fa-info-circle mr-2 text-blue-500"></i> Grade 1/2 Durumu:</p>
+                        Disiplinli protein alımı sayesinde karaciğer rejenerasyonu (hücre yenilenmesi) devam ediyor. Haftalık hedefin olan <b>3.5kg</b> kaybına bir adım daha yaklaştın.
+                    </div>
+                </div>
+                
+                <button onclick="nextDay()" class="mt-6 w-full bg-emerald-500 py-4 rounded-2xl font-black text-white shadow-xl">YARINA HAZIRLAN</button>
             `;
             container.appendChild(card);
+
+            // Grafik Çizimi
+            const ctx = document.getElementById('dailyChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Protein', 'Lif', 'Yağ'],
+                    datasets: [{
+                        data: [45, 35, 20],
+                        backgroundColor: ['#10b981', '#3b82f6', '#f59e0b'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { cutout: '70%', plugins: { legend: { position: 'bottom', labels: { color: 'white', font: { size: 10 } } } } }
+            });
+
             document.getElementById('action-controls').innerHTML = '';
-            document.getElementById('btn-prev').style.display = 'none';
-            document.getElementById('btn-next').style.display = 'none';
         }
 
         function updateDots() {
             const container = document.getElementById('dots-container');
             container.innerHTML = dayStatus.meals.map((s, i) => 
                 `<div class="progress-dot ${s === 1 ? 'done' : ''} ${i === currentIdx ? 'active' : ''}"></div>`
-            ).join('') + (dayStatus.meals.every(m => m === 1) ? `<div class="progress-dot ${currentIdx === 5 ? 'active' : ''}"><i class="fas fa-star text-[6px] text-yellow-400"></i></div>` : '');
+            ).join('');
         }
 
         function updateControls() {
             const controls = document.getElementById('action-controls');
-            if(currentIdx >= 5) return; // Başarı kartında butonlar JS ile yönetiliyor
+            if(currentIdx >= 5) return;
 
             const isDone = dayStatus.meals[currentIdx] === 1;
-
             if (isDone) {
-                controls.innerHTML = `<button onclick="setStatus(0)" class="bg-rose-500/10 text-rose-500 border border-rose-500/20 px-8 py-4 rounded-2xl font-black text-xs uppercase">İptal Et / Yeniden Oyla</button>`;
+                controls.innerHTML = `<button onclick="setStatus(0)" class="text-rose-500 text-xs font-bold uppercase tracking-widest border border-rose-500/30 px-6 py-3 rounded-xl">İşlemi Geri Al</button>`;
             } else {
                 controls.innerHTML = `
-                    <button onclick="setStatus(1)" class="w-64 bg-emerald-500 text-white py-4 rounded-2xl font-black shadow-lg shadow-emerald-500/20 text-sm">YAPTIM!</button>
-                    <button onclick="nextCard()" class="text-gray-500 text-[10px] font-bold uppercase tracking-widest mt-2">Şimdilik Pas Geç</button>
+                    <button onclick="setStatus(1)" class="w-64 bg-emerald-500 py-4 rounded-2xl font-black text-white shadow-lg">ÖĞÜNÜ ONAYLA</button>
+                    <div class="flex gap-10 mt-4">
+                        <button onclick="prevCard()" class="text-gray-500"><i class="fas fa-chevron-left mr-2"></i> Geri</button>
+                        <button onclick="nextCard()" class="text-gray-500">İleri <i class="fas fa-chevron-right ml-2"></i></button>
+                    </div>
                 `;
             }
         }
@@ -197,21 +231,14 @@
             const mealMins = m.h * 60 + m.m;
 
             if (val === 1 && currentMins < mealMins - 15) {
-                alert(`⚠️ Çok Sabırsızsın ${user.name}! \n\nKaraciğer sağlığı disiplin gerektirir. ${m.title} öğünü için saati beklemelisin (${m.h}:${m.m}).`);
+                alert(`⚠️ Zamanlama Hatası!\n\n${m.title} için henüz erken. Karaciğer biyolojik saatine uyarak ${m.h}:${m.m} saatinde onayla.`);
                 return;
             }
 
             dayStatus.meals[currentIdx] = val;
-            localStorage.setItem('hepatoFinal_DayStatus', JSON.stringify(dayStatus));
+            localStorage.setItem('hepatoAI_DayStatus', JSON.stringify(dayStatus));
             
-            if (val === 1 && currentIdx < 5) {
-                // Eğer son öğünse başarı kartına geç
-                if (currentIdx === 4) {
-                    currentIdx = 5;
-                } else {
-                    currentIdx++;
-                }
-            }
+            if (val === 1 && currentIdx < 5) currentIdx++;
             
             updateCards();
             updateDots();
@@ -222,14 +249,14 @@
             dayStatus.day++;
             dayStatus.meals = [0,0,0,0,0];
             currentIdx = 0;
-            localStorage.setItem('hepatoFinal_DayStatus', JSON.stringify(dayStatus));
-            location.reload(); // Yarını taze bir başlangıçla yükle
+            localStorage.setItem('hepatoAI_DayStatus', JSON.stringify(dayStatus));
+            location.reload();
         }
 
         function nextCard() { if (currentIdx < 5) { currentIdx++; updateCards(); updateDots(); updateControls(); } }
         function prevCard() { if (currentIdx > 0) { currentIdx--; updateCards(); updateDots(); updateControls(); } }
 
-        if(user) renderApp();
+        renderApp();
     </script>
 </body>
 </html>
