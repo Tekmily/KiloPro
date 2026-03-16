@@ -3,249 +3,271 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HepatoFit - Profesyonel Karaciğer & Diyet Asistanı</title>
+    <title>HepatoFit Elite v2 - Besin Rehberi & Takip</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --primary: #10b981; --secondary: #3b82f6; --dark: #0f172a; }
-        body { background-color: var(--dark); color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .sport-gradient { background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%); }
-        .card-share { background: linear-gradient(45deg, #1e293b, #334155); border-radius: 20px; border: 2px solid #38bdf8; }
-        input, select { background: #1e293b !important; border: 1px solid #334155 !important; color: white !important; transition: 0.3s; }
-        input:focus { border-color: #38bdf8 !important; box-shadow: 0 0 10px rgba(56, 189, 248, 0.2); }
-        .animate-pulse-slow { animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .7; } }
+        :root { --emerald: #10b981; --sapphire: #3b82f6; }
+        .light-mode { background: #f1f5f9; color: #1e293b; }
+        .dark-mode { background: #0f172a; color: #f8fafc; }
+        body { transition: background 0.4s; font-family: 'Inter', sans-serif; }
+        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; }
+        .light-mode .glass { background: rgba(255, 255, 255, 0.8); border: 1px solid #ddd; }
+        .action-pulse { animation: pulse-border 2s infinite; }
+        @keyframes pulse-border { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); } 100% { box-shadow: 0 0 0 20px rgba(16, 185, 129, 0); } }
+        .food-card { transition: transform 0.3s ease; cursor: pointer; }
+        .food-card:hover { transform: translateY(-5px); }
     </style>
 </head>
-<body class="min-h-screen p-4 md:p-10">
+<body class="dark-mode p-4 md:p-8">
 
-    <div id="setup-screen" class="max-w-md mx-auto glass p-8 rounded-3xl mt-10 shadow-2xl">
-        <div class="text-center mb-8">
-            <i class="fas fa-heartbeat text-5xl text-emerald-400 mb-4 animate-bounce"></i>
-            <h1 class="text-3xl font-extrabold tracking-tight">HepatoFit <span class="text-emerald-400">Pro</span></h1>
-            <p class="text-gray-400 text-sm mt-2">Kişiselleştirilmiş Karaciğer Dostu Diyet & Spor</p>
-        </div>
-        
-        <div class="space-y-4">
-            <input type="text" id="uName" placeholder="Adınız" class="w-full p-4 rounded-xl outline-none">
-            <div class="flex gap-4">
-                <input type="number" id="uAge" placeholder="Yaş" class="w-1/2 p-4 rounded-xl outline-none">
-                <select id="uGender" class="w-1/2 p-4 rounded-xl outline-none">
-                    <option value="male">Erkek</option>
-                    <option value="female">Kadın</option>
-                </select>
-            </div>
-            <div class="flex gap-4">
-                <input type="number" id="uWeight" placeholder="Kilo (kg)" class="w-1/2 p-4 rounded-xl outline-none">
-                <input type="number" id="uHeight" placeholder="Boy (cm)" class="w-1/2 p-4 rounded-xl outline-none">
-            </div>
-            <button onclick="initializeApp()" class="w-full sport-gradient p-4 rounded-xl font-bold text-lg hover:scale-105 transition-transform active:scale-95 shadow-lg shadow-emerald-500/20">
-                Hesapla & Başla
-            </button>
+    <div class="max-w-6xl mx-auto flex justify-between items-center mb-10">
+        <h1 class="text-2xl font-black tracking-tighter italic text-emerald-500">HEPATOFIT <span class="text-white opacity-50">PRO</span></h1>
+        <div class="flex gap-4">
+            <button onclick="toggleTheme()" class="w-10 h-10 glass flex items-center justify-center rounded-full"><i class="fas fa-adjust"></i></button>
+            <button onclick="resetData()" class="text-xs opacity-50 hover:opacity-100 uppercase tracking-widest">Sıfırla</button>
         </div>
     </div>
 
-    <div id="main-dashboard" class="hidden max-w-5xl mx-auto space-y-8">
-        
-        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div>
-                <h2 class="text-3xl font-bold">Hoş geldin, <span id="display-name" class="text-emerald-400"></span>!</h2>
-                <p id="date-now" class="text-gray-400"></p>
+    <div id="setup-screen" class="max-w-md mx-auto glass p-8 mb-10">
+        <h2 class="text-xl font-bold mb-6 text-center">Fizyolojik Profilinizi Oluşturun</h2>
+        <div class="space-y-4">
+            <input type="text" id="uName" placeholder="Adınız" class="w-full p-4 rounded-xl bg-black/20 outline-none border border-white/10">
+            <div class="flex gap-4">
+                <select id="uGender" class="w-1/2 p-4 rounded-xl bg-black/20 outline-none border border-white/10">
+                    <option value="male">Erkek</option>
+                    <option value="female">Kadın</option>
+                </select>
+                <input type="number" id="uAge" placeholder="Yaş" class="w-1/2 p-4 rounded-xl bg-black/20 outline-none">
             </div>
-            <div class="flex gap-3">
-                <button onclick="resetData()" class="px-4 py-2 text-xs bg-red-500/20 text-red-400 rounded-lg border border-red-500/30 hover:bg-red-500/40">Verileri Sıfırla</button>
-                <button onclick="updateDaily()" class="px-4 py-2 text-xs bg-blue-500/20 text-blue-400 rounded-lg border border-blue-500/30 hover:bg-blue-500/40">Günü Güncelle</button>
+            <div class="flex gap-4">
+                <input type="number" id="uWeight" placeholder="Kilo" class="w-1/2 p-4 rounded-xl bg-black/20 outline-none">
+                <input type="number" id="uHeight" placeholder="Boy" class="w-1/2 p-4 rounded-xl bg-black/20 outline-none">
+            </div>
+            <button onclick="start()" class="w-full bg-emerald-500 py-4 rounded-xl font-bold hover:bg-emerald-600 transition shadow-lg shadow-emerald-500/30">HESAPLA VE PLANI OLUŞTUR</button>
+        </div>
+    </div>
+
+    <div id="main-dashboard" class="hidden max-w-6xl mx-auto space-y-8">
+        
+        <div id="action-wrapper" class="glass p-1 rounded-[2rem]">
+            <div id="action-bar" class="bg-gradient-to-r from-emerald-600 to-blue-600 p-6 rounded-[1.8rem] flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-5">
+                    <div class="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center text-2xl"><i id="task-icon" class="fas fa-utensils"></i></div>
+                    <div>
+                        <span class="text-[10px] font-black uppercase tracking-widest opacity-70">Sıradaki Adım</span>
+                        <h3 id="task-name" class="text-lg font-bold">Yükleniyor...</h3>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span id="task-time" class="font-mono text-xl font-bold bg-black/20 px-4 py-2 rounded-xl">--:--</span>
+                    <button onclick="taskDone()" class="bg-white text-emerald-600 px-8 py-3 rounded-xl font-black hover:scale-105 transition active:scale-95 shadow-xl">TAMAMLANDI</button>
+                </div>
             </div>
         </div>
 
         <div class="grid lg:grid-cols-3 gap-8">
             
-            <div class="lg:col-span-2 space-y-6">
-                <div class="glass p-6 rounded-3xl relative overflow-hidden">
-                    <div class="absolute -right-10 -top-10 opacity-10 text-[10rem]"><i class="fas fa-apple-alt"></i></div>
-                    <h3 class="text-xl font-bold mb-4 flex items-center text-emerald-400">
-                        <i class="fas fa-robot mr-2"></i> Profesyonel Diyetisyen Analizi
-                    </h3>
-                    <p id="ai-report" class="text-gray-300 leading-relaxed italic border-l-4 border-emerald-500 pl-4 bg-emerald-500/5 py-4">
-                        Analiz yapılıyor...
-                    </p>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-                        <div class="bg-slate-800/50 p-4 rounded-2xl text-center">
-                            <span class="block text-xs text-gray-400">Vücut Kitle İndeksi</span>
-                            <span id="vki-val" class="text-xl font-bold">--</span>
+            <div class="space-y-6">
+                <div class="glass p-6 text-center">
+                    <div class="relative inline-block mb-4">
+                        <img id="avatar" src="" class="w-24 h-24 rounded-3xl border-2 border-emerald-500 mx-auto">
+                        <div class="absolute -bottom-2 -right-2 bg-emerald-500 w-8 h-8 rounded-full flex items-center justify-center text-xs"><i class="fas fa-check"></i></div>
+                    </div>
+                    <h2 id="userName" class="text-2xl font-black tracking-tight italic">--</h2>
+                    <p class="text-xs text-emerald-400 font-bold uppercase mt-1">Karaciğer Dostu Mod Aktif</p>
+                    
+                    <div class="grid grid-cols-2 gap-4 mt-6">
+                        <div class="bg-black/20 p-4 rounded-2xl">
+                            <p class="text-[10px] text-gray-500 uppercase font-bold">VKI</p>
+                            <span id="vki" class="text-xl font-black">--</span>
                         </div>
-                        <div class="bg-slate-800/50 p-4 rounded-2xl text-center">
-                            <span class="block text-xs text-gray-400">İdeal Kilo</span>
-                            <span id="ideal-val" class="text-xl font-bold text-emerald-400">--</span>
-                        </div>
-                        <div class="bg-slate-800/50 p-4 rounded-2xl text-center">
-                            <span class="block text-xs text-gray-400">Bazal Metabolizma</span>
-                            <span id="bmr-val" class="text-xl font-bold">--</span>
-                        </div>
-                        <div class="bg-slate-800/50 p-4 rounded-2xl text-center">
-                            <span class="block text-xs text-gray-400">Su Hedefi</span>
-                            <span id="water-val" class="text-xl font-bold text-blue-400">--</span>
+                        <div class="bg-black/20 p-4 rounded-2xl">
+                            <p class="text-[10px] text-gray-500 uppercase font-bold">İdeal Kilo</p>
+                            <span id="ideal" class="text-xl font-black text-emerald-400">--</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="glass p-6 rounded-3xl">
-                    <h3 class="text-xl font-bold mb-4 flex items-center">
-                        <i class="fas fa-calendar-check mr-2 text-blue-400"></i> Bugünün Aksiyon Planı
-                    </h3>
-                    <div id="daily-plan" class="space-y-3">
-                        </div>
+                <div class="glass p-6">
+                    <h3 class="font-bold mb-4 flex items-center gap-2"><i class="fab fa-youtube text-red-500"></i> Motivasyon Radyosu</h3>
+                    <div class="space-y-2" id="musicList"></div>
                 </div>
             </div>
 
-            <div class="space-y-6">
-                <div id="share-card" class="card-share p-6 text-center shadow-2xl relative">
-                    <div class="absolute top-2 right-4 text-[10px] uppercase tracking-widest text-emerald-400 font-bold">HepatoFit Report</div>
-                    <img id="user-avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" class="w-20 h-20 mx-auto rounded-full border-4 border-emerald-500 mb-4 bg-slate-700">
-                    <h4 class="text-xl font-bold" id="card-name">Kullanıcı</h4>
-                    <p class="text-sm text-gray-400 mb-4" id="card-status">Hedefe Doğru İlerliyor!</p>
-                    <div class="bg-white/5 rounded-xl p-4 mb-4">
-                        <div class="flex justify-between text-sm mb-1">
-                            <span>Haftalık Hedef</span>
-                            <span class="text-emerald-400">-3.5 kg</span>
+            <div class="lg:col-span-2 space-y-8">
+                
+                <div class="glass p-8 border-t-4 border-emerald-500">
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <h3 class="text-xl font-black italic uppercase tracking-tighter">Hücresel Beslenme & Değişim Kartı</h3>
+                            <p class="text-sm text-gray-400 mt-1">Grade 1/2 Yağlanmayı Geri Çevirme Listesi</p>
                         </div>
-                        <div class="w-full bg-gray-700 h-2 rounded-full overflow-hidden">
-                            <div class="bg-emerald-500 h-full w-2/3"></div>
+                        <i class="fas fa-leaf text-3xl text-emerald-500/30"></i>
+                    </div>
+
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            <h4 class="text-emerald-400 font-bold text-sm border-b border-emerald-500/20 pb-2">Yüksek Kalite Proteinler</h4>
+                            <div id="protein-list" class="space-y-2">
+                                </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <h4 class="text-red-400 font-bold text-sm border-b border-red-500/20 pb-2">Fruktoz & Karaciğer Düşmanları</h4>
+                            <div id="forbidden-list" class="space-y-2 text-xs opacity-80">
+                                <p class="flex items-center gap-2 text-red-300"><i class="fas fa-times-circle"></i> Hazır Meyve Suları (Yüksek Fruktoz)</p>
+                                <p class="flex items-center gap-2 text-red-300"><i class="fas fa-times-circle"></i> Beyaz Ekmek & Nişastalı Gıdalar</p>
+                                <p class="flex items-center gap-2 text-orange-300"><i class="fas fa-exclamation-triangle"></i> Çok Tatlı Meyveler (Kavun, Üzüm)</p>
+                                <p class="flex items-center gap-2 text-blue-300"><i class="fas fa-info-circle"></i> Karaciğer için Günde 2 Litre Su Şart!</p>
+                            </div>
                         </div>
                     </div>
-                    <button onclick="shareProgress()" class="w-full py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-bold transition">
-                        <i class="fas fa-share-nodes mr-2"></i> Sosyal Medyada Paylaş
-                    </button>
                 </div>
 
-                <div class="glass p-6 rounded-3xl">
-                    <h4 class="font-bold mb-4 text-sm uppercase tracking-wider text-gray-400">Antrenman Radyosu</h4>
-                    <iframe class="rounded-xl shadow-lg" width="100%" height="80" src="https://www.youtube.com/embed/videoseries?list=PL3-sRm8xAzY-fS-v00YvTjsc_XzS_B6Pz&controls=0&modestbranding=1" frameborder="0" allow="autoplay; encrypted-media"></iframe>
-                    <p class="text-[10px] mt-3 text-center text-gray-500 italic">"Zorluklar, başarının süsüdür."</p>
+                <div class="glass p-8">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-bold italic">Zaman Çizelgesi</h3>
+                        <button onclick="share()" class="text-xs bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full border border-emerald-500/30">PAYLAŞ</button>
+                    </div>
+                    <div id="timeline" class="space-y-4"></div>
                 </div>
+
             </div>
         </div>
     </div>
 
     <script>
-        // Uygulama Durumu (State)
-        let user = JSON.parse(localStorage.getItem('hepatoProUser'));
+        let user = JSON.parse(localStorage.getItem('hepatoProV2'));
+        let currentTaskIdx = 0;
 
-        // Sayfa yüklendiğinde kontrol et
-        window.onload = () => {
-            if (user) showDashboard();
+        const tasks = [
+            { h: 7, m: 30, n: "Aç Karnına Kardiyo (Yağ Yakımı)", i: "fa-running", d: "Karaciğerdeki glikojen depolarını boşaltmak için." },
+            { h: 9, m: 0, n: "Yüksek Proteinli Kahvaltı", i: "fa-egg", d: "2 Yumurta + Lor Peyniri + Bol Yeşillik" },
+            { h: 13, m: 0, n: "Karaciğer Dostu Öğle Yemeği", i: "fa-leaf", d: "Haşlama Sebze + Izgara Tavuk/Balık" },
+            { h: 16, m: 30, n: "Metabolik Ara Öğün", i: "fa-coffee", d: "Sade Kahve + 3 Adet Ceviz" },
+            { h: 19, m: 0, n: "Hafif Akşam Kapanışı", i: "fa-moon", d: "Zeytinyağlı Enginar veya Mevsim Salatası" }
+        ];
+
+        const proteins = {
+            male: [
+                { n: "Izgara Tavuk Göğsü", q: "180g", c: "Yüksek Lösin (Kas korur)" },
+                { n: "Yağsız Dana Eti", q: "150g", c: "Demir & Çinko (Testosteron)" },
+                { n: "Somon / Ton Balığı", q: "200g", c: "Omega-3 (Karaciğer dostu)" },
+                { n: "Lor Peyniri", q: "100g", c: "Gece proteini (Kazein)" }
+            ],
+            female: [
+                { n: "Izgara Hindi Füme", q: "120g", c: "Hafif ve Sindirimi Kolay" },
+                { n: "Beyaz Etli Balık", q: "180g", c: "İyot ve Düşük Kalori" },
+                { n: "Yumurta Beyazı", q: "3 Adet", c: "Saf Protein Kaynağı" },
+                { n: "Mercimek / Baklagil", q: "1 Kase", c: "Bitkisel Lifli Protein" }
+            ]
         };
 
-        function initializeApp() {
+        const playlists = [
+            { n: "Hard Workout Phonk", id: "5p3K6yXGf-c" },
+            { n: "Zen Focus (Mutfak)", id: "MCpE_6M8T_0" }
+        ];
+
+        window.onload = () => { if(user) renderDashboard(); };
+
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            document.body.classList.toggle('light-mode');
+        }
+
+        function start() {
             const data = {
                 name: document.getElementById('uName').value,
-                age: parseInt(document.getElementById('uAge').value),
                 gender: document.getElementById('uGender').value,
-                weight: parseFloat(document.getElementById('uWeight').value),
-                height: parseFloat(document.getElementById('uHeight').value),
-                startDate: new Date().toISOString()
+                age: document.getElementById('uAge').value,
+                weight: document.getElementById('uWeight').value,
+                height: document.getElementById('uHeight').value
             };
-
-            if (!data.name || !data.weight || !data.height) {
-                alert("Lütfen tüm alanları profesyonel bir sonuç için doldurun.");
-                return;
-            }
-
-            localStorage.setItem('hepatoProUser', JSON.stringify(data));
+            if(!data.name || !data.weight) return alert("Bilgileri doldurun!");
+            localStorage.setItem('hepatoProV2', JSON.stringify(data));
             user = data;
-            showDashboard();
+            renderDashboard();
         }
 
-        function showDashboard() {
+        function renderDashboard() {
             document.getElementById('setup-screen').classList.add('hidden');
             document.getElementById('main-dashboard').classList.remove('hidden');
-            document.getElementById('display-name').innerText = user.name;
-            document.getElementById('card-name').innerText = user.name;
-            document.getElementById('date-now').innerText = new Date().toLocaleDateString('tr-TR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-
-            renderAnalysis();
-            renderSchedule();
-        }
-
-        function renderAnalysis() {
-            // VKİ Hesaplama
-            const heightM = user.height / 100;
-            const vki = (user.weight / (heightM * heightM)).toFixed(1);
-            document.getElementById('vki-val').innerText = vki;
-
-            // İdeal Kilo (Devine Formülü - Cinsiyete Duyarlı)
-            let ideal;
-            if (user.gender === 'male') {
-                ideal = 50 + 2.3 * ((user.height / 2.54) - 60);
-            } else {
-                ideal = 45.5 + 2.3 * ((user.height / 2.54) - 60);
-            }
-            document.getElementById('ideal-val').innerText = Math.round(ideal) + " kg";
-
-            // BMR (Mifflin-St Jeor)
-            let bmr = (10 * user.weight) + (6.25 * user.height) - (5 * user.age);
-            bmr = (user.gender === 'male') ? bmr + 5 : bmr - 161;
-            document.getElementById('bmr-val').innerText = Math.round(bmr) + " kcal";
+            document.getElementById('userName').innerText = user.name;
             
-            // Su Tüketimi
-            document.getElementById('water-val').innerText = (user.weight * 0.035).toFixed(1) + " L";
+            const avatarSeed = user.gender === 'male' ? 'Felix' : 'Aneka';
+            document.getElementById('avatar').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`;
 
-            // Diyetisyen Yorumu
-            const report = `Karaciğer yağlanması (Grade 1/2) riskini minimize etmek için fruktoz alımını sınırlamalıyız. 
-            ${user.gender === 'female' ? 'Hormonal dengenizi korumak adına' : 'Testosteron ve kas sağlığı için'} günlük 
-            kalori ihtiyacınızın %20 altında, ancak protein ağırlıklı beslenmelisiniz. Haftalık 3-4 kg kaybı hedefliyoruz, 
-            bu yüzden sabahları kardiyo egzersizlerini aç karnına ekledim.`;
-            document.getElementById('ai-report').innerText = report;
+            // Hesaplamalar
+            const h = user.height / 100;
+            const vki = (user.weight / (h*h)).toFixed(1);
+            document.getElementById('vki').innerText = vki;
+            let ideal = user.gender === 'male' ? 50 + 2.3 * ((user.height/2.54)-60) : 45.5 + 2.3 * ((user.height/2.54)-60);
+            document.getElementById('ideal').innerText = Math.round(ideal) + " kg";
+
+            // Besin Listesi
+            const pList = document.getElementById('protein-list');
+            pList.innerHTML = proteins[user.gender].map(p => `
+                <div class="food-card bg-black/10 p-3 rounded-xl border border-white/5 flex justify-between items-center">
+                    <div>
+                        <p class="text-xs font-bold">${p.n}</p>
+                        <p class="text-[10px] opacity-50">${p.c}</p>
+                    </div>
+                    <span class="bg-emerald-500/20 text-emerald-400 text-[10px] px-2 py-1 rounded-md font-bold">${p.q}</span>
+                </div>
+            `).join('');
+
+            // Müzik
+            document.getElementById('musicList').innerHTML = playlists.map(s => `
+                <div onclick="window.open('https://youtube.com/watch?v=${s.id}')" class="p-3 bg-black/20 rounded-xl flex justify-between items-center cursor-pointer hover:bg-emerald-500/20 transition">
+                    <span class="text-xs font-bold">${s.n}</span>
+                    <i class="fas fa-play text-[10px]"></i>
+                </div>
+            `).join('');
+
+            updateTimeline();
+            setInterval(updateTimeline, 60000);
         }
 
-        function renderSchedule() {
-            const plans = [
-                { time: "07:30", task: "Limonlu Ilık Su + 20 Dakika Tempolu Yürüyüş", icon: "fa-running", color: "text-orange-400" },
-                { time: "09:00", task: "Kahvaltı: 2 Yumurta, Lor Peyniri, Bol Roka (KC Dostu)", icon: "fa-egg", color: "text-yellow-400" },
-                { time: "13:00", task: "Öğle: Izgara Tavuk veya Baklagil + Büyük Boy Salata", icon: "fa-utensils", color: "text-emerald-400" },
-                { time: "16:00", task: "Ara Öğün: 1 Fincan Yeşil Çay + 3 Tam Ceviz", icon: "fa-leaf", color: "text-green-400" },
-                { time: "19:00", task: "Akşam: Zeytinyağlı Enginar veya Mevsim Sebzesi (Hafif)", icon: "fa-cloud-moon", color: "text-blue-400" }
-            ];
+        function updateTimeline() {
+            const now = new Date();
+            const currentMins = now.getHours() * 60 + now.getMinutes();
 
-            const container = document.getElementById('daily-plan');
-            container.innerHTML = plans.map(p => `
-                <div class="flex items-center justify-between bg-slate-800/40 p-4 rounded-2xl border border-white/5 hover:border-emerald-500/50 transition cursor-pointer group">
-                    <div class="flex items-center gap-4">
-                        <div class="w-12 h-12 rounded-xl bg-slate-700 flex items-center justify-center ${p.color}">
-                            <i class="fas ${p.icon} text-xl"></i>
-                        </div>
-                        <div>
-                            <span class="text-xs text-gray-500 font-bold">${p.time}</span>
-                            <p class="text-sm font-medium group-hover:text-white">${p.task}</p>
-                        </div>
+            tasks.forEach((t, i) => {
+                const tMins = t.h * 60 + t.m;
+                if(currentMins >= tMins && currentMins < tMins + 60) currentTaskIdx = i;
+            });
+
+            const activeTask = tasks[currentTaskIdx];
+            document.getElementById('task-name').innerText = activeTask.n;
+            document.getElementById('task-time').innerText = `${String(activeTask.h).padStart(2,'0')}:${String(activeTask.m).padStart(2,'0')}`;
+            document.getElementById('task-icon').className = `fas ${activeTask.i}`;
+            document.getElementById('action-wrapper').classList.add('action-pulse');
+
+            document.getElementById('timeline').innerHTML = tasks.map((t, i) => `
+                <div class="flex items-center gap-4 p-4 rounded-2xl ${i === currentTaskIdx ? 'bg-emerald-500/20 border border-emerald-500' : 'bg-black/10 opacity-60'}">
+                    <span class="font-mono font-bold text-xs">${String(t.h).padStart(2,'0')}:${String(t.m).padStart(2,'0')}</span>
+                    <div>
+                        <p class="text-sm font-bold">${t.n}</p>
+                        <p class="text-[10px] opacity-70">${t.d}</p>
                     </div>
-                    <input type="checkbox" class="w-6 h-6 rounded-full accent-emerald-500">
+                    ${i < currentTaskIdx ? '<i class="fas fa-check-circle ml-auto text-emerald-500"></i>' : ''}
                 </div>
             `).join('');
         }
 
-        function shareProgress() {
-            const message = `🚀 ${user.name} bugün HepatoFit Pro ile harika bir ilerleme kaydetti! \n🎯 İdeal Kilo Hedefi: ${document.getElementById('ideal-val').innerText} \n💧 Su Hedefi Tamamlandı! \n#SağlıklıYaşam #HepatoFit #Diyet`;
-            if (navigator.share) {
-                navigator.share({ title: 'Başarı Kartım', text: message, url: window.location.href });
-            } else {
-                alert("Kart Kopyalandı! \n\n" + message);
-            }
+        function taskDone() {
+            alert("Harika! Karaciğerin bu disipline bayılacak. Bir sonraki göreve odaklanıyoruz!");
+            currentTaskIdx = (currentTaskIdx + 1) % tasks.length;
+            updateTimeline();
         }
 
-        function updateDaily() {
-            alert("Harika! Verileriniz profesyonel algoritmamız tarafından analiz edildi ve yarınki takviminiz karaciğer dinlendirme moduna güncellendi.");
-            renderSchedule(); // Simülasyon
+        function share() {
+            const msg = `🚀 ${user.name} bugün HepatoFit Pro ile disiplinli ilerliyor. İdeal Kilo Hedefi: ${document.getElementById('ideal').innerText} #Diyet #Sağlık`;
+            navigator.share ? navigator.share({title: 'HepatoFit', text: msg}) : alert("Kopyalandı: " + msg);
         }
 
-        function resetData() {
-            if(confirm("Tüm verileriniz silinecek. Emin misiniz?")) {
-                localStorage.removeItem('hepatoProUser');
-                location.reload();
-            }
-        }
+        function resetData() { if(confirm("Tüm veriler silinecek?")) { localStorage.clear(); location.reload(); } }
     </script>
 </body>
 </html>
-
