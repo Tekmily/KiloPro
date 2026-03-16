@@ -3,189 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HepatoFit Elite v2 - Besin Rehberi & Takip</title>
+    <title>HepatoFit Elite - Swipe & Track</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --emerald: #10b981; --sapphire: #3b82f6; }
-        .light-mode { background: #f1f5f9; color: #1e293b; }
-        .dark-mode { background: #0f172a; color: #f8fafc; }
-        body { transition: background 0.4s; font-family: 'Inter', sans-serif; }
-        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; }
-        .light-mode .glass { background: rgba(255, 255, 255, 0.8); border: 1px solid #ddd; }
-        .action-pulse { animation: pulse-border 2s infinite; }
-        @keyframes pulse-border { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); } 100% { box-shadow: 0 0 0 20px rgba(16, 185, 129, 0); } }
-        .food-card { transition: transform 0.3s ease; cursor: pointer; }
-        .food-card:hover { transform: translateY(-5px); }
+        :root { --emerald: #10b981; --rose: #f43f5e; --dark: #0f172a; }
+        body { background-color: var(--dark); color: white; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); border-radius: 2rem; }
+        
+        /* Kart Kaydırma Alanı */
+        #card-container { position: relative; height: 450px; width: 100%; max-width: 350px; margin: 0 auto; perspective: 1000px; }
+        .swipe-card { 
+            position: absolute; width: 100%; height: 100%; 
+            transition: transform 0.5s ease, opacity 0.5s ease;
+            cursor: grab; user-select: none; touch-action: none;
+        }
+        .swipe-card:active { cursor: grabbing; }
+        
+        .status-overlay {
+            position: absolute; top: 20px; padding: 10px 20px; border-radius: 10px; font-weight: 900; 
+            font-size: 2rem; border: 4px solid; opacity: 0; transform: rotate(-20deg);
+        }
+        .status-yes { left: 20px; color: var(--emerald); border-color: var(--emerald); }
+        .status-no { right: 20px; color: var(--rose); border-color: var(--rose); transform: rotate(20deg); }
+
+        .progress-bar { height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
+        .progress-inner { height: 100%; background: var(--emerald); transition: width 0.3s ease; }
     </style>
 </head>
-<body class="dark-mode p-4 md:p-8">
+<body class="p-4">
 
-    <div class="max-w-6xl mx-auto flex justify-between items-center mb-10">
-        <h1 class="text-2xl font-black tracking-tighter italic text-emerald-500">HEPATOFIT <span class="text-white opacity-50">PRO</span></h1>
-        <div class="flex gap-4">
-            <button onclick="toggleTheme()" class="w-10 h-10 glass flex items-center justify-center rounded-full"><i class="fas fa-adjust"></i></button>
-            <button onclick="resetData()" class="text-xs opacity-50 hover:opacity-100 uppercase tracking-widest">Sıfırla</button>
-        </div>
-    </div>
-
-    <div id="setup-screen" class="max-w-md mx-auto glass p-8 mb-10">
-        <h2 class="text-xl font-bold mb-6 text-center">Fizyolojik Profilinizi Oluşturun</h2>
+    <div id="setup-screen" class="max-w-md mx-auto glass p-8 mt-10">
+        <h1 class="text-3xl font-black text-emerald-500 mb-6 italic text-center uppercase tracking-tighter">HepatoFit Elite</h1>
         <div class="space-y-4">
-            <input type="text" id="uName" placeholder="Adınız" class="w-full p-4 rounded-xl bg-black/20 outline-none border border-white/10">
+            <input type="text" id="uName" placeholder="Adınız" class="w-full p-4 rounded-2xl bg-slate-800 border-none outline-none">
+            <select id="uGender" class="w-full p-4 rounded-2xl bg-slate-800 border-none">
+                <option value="male">Erkek (Testosteron & Kas Odaklı)</option>
+                <option value="female">Kadın (Hormon & Metabolizma Odaklı)</option>
+            </select>
             <div class="flex gap-4">
-                <select id="uGender" class="w-1/2 p-4 rounded-xl bg-black/20 outline-none border border-white/10">
-                    <option value="male">Erkek</option>
-                    <option value="female">Kadın</option>
-                </select>
-                <input type="number" id="uAge" placeholder="Yaş" class="w-1/2 p-4 rounded-xl bg-black/20 outline-none">
+                <input type="number" id="uWeight" placeholder="Kilo" class="w-1/2 p-4 rounded-2xl bg-slate-800">
+                <input type="number" id="uHeight" placeholder="Boy" class="w-1/2 p-4 rounded-2xl bg-slate-800">
             </div>
-            <div class="flex gap-4">
-                <input type="number" id="uWeight" placeholder="Kilo" class="w-1/2 p-4 rounded-xl bg-black/20 outline-none">
-                <input type="number" id="uHeight" placeholder="Boy" class="w-1/2 p-4 rounded-xl bg-black/20 outline-none">
-            </div>
-            <button onclick="start()" class="w-full bg-emerald-500 py-4 rounded-xl font-bold hover:bg-emerald-600 transition shadow-lg shadow-emerald-500/30">HESAPLA VE PLANI OLUŞTUR</button>
+            <button onclick="initApp()" class="w-full bg-emerald-500 p-4 rounded-2xl font-black shadow-lg">BAŞLAT</button>
         </div>
     </div>
 
-    <div id="main-dashboard" class="hidden max-w-6xl mx-auto space-y-8">
+    <div id="main-dashboard" class="hidden max-w-lg mx-auto space-y-6">
         
-        <div id="action-wrapper" class="glass p-1 rounded-[2rem]">
-            <div id="action-bar" class="bg-gradient-to-r from-emerald-600 to-blue-600 p-6 rounded-[1.8rem] flex flex-col md:flex-row items-center justify-between gap-4">
-                <div class="flex items-center gap-5">
-                    <div class="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center text-2xl"><i id="task-icon" class="fas fa-utensils"></i></div>
-                    <div>
-                        <span class="text-[10px] font-black uppercase tracking-widest opacity-70">Sıradaki Adım</span>
-                        <h3 id="task-name" class="text-lg font-bold">Yükleniyor...</h3>
-                    </div>
-                </div>
-                <div class="flex items-center gap-4">
-                    <span id="task-time" class="font-mono text-xl font-bold bg-black/20 px-4 py-2 rounded-xl">--:--</span>
-                    <button onclick="taskDone()" class="bg-white text-emerald-600 px-8 py-3 rounded-xl font-black hover:scale-105 transition active:scale-95 shadow-xl">TAMAMLANDI</button>
+        <div class="flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <img id="avatar" src="" class="w-12 h-12 rounded-full border-2 border-emerald-500">
+                <div>
+                    <h2 id="displayName" class="font-bold">--</h2>
+                    <p class="text-[10px] text-emerald-400 uppercase tracking-widest font-bold">Grade 1/2 Koruma Modu</p>
                 </div>
             </div>
+            <button onclick="toggleBesin()" class="glass p-3 text-xs font-bold text-emerald-400">BESİN LİSTESİ</button>
         </div>
 
-        <div class="grid lg:grid-cols-3 gap-8">
-            
-            <div class="space-y-6">
-                <div class="glass p-6 text-center">
-                    <div class="relative inline-block mb-4">
-                        <img id="avatar" src="" class="w-24 h-24 rounded-3xl border-2 border-emerald-500 mx-auto">
-                        <div class="absolute -bottom-2 -right-2 bg-emerald-500 w-8 h-8 rounded-full flex items-center justify-center text-xs"><i class="fas fa-check"></i></div>
-                    </div>
-                    <h2 id="userName" class="text-2xl font-black tracking-tight italic">--</h2>
-                    <p class="text-xs text-emerald-400 font-bold uppercase mt-1">Karaciğer Dostu Mod Aktif</p>
-                    
-                    <div class="grid grid-cols-2 gap-4 mt-6">
-                        <div class="bg-black/20 p-4 rounded-2xl">
-                            <p class="text-[10px] text-gray-500 uppercase font-bold">VKI</p>
-                            <span id="vki" class="text-xl font-black">--</span>
-                        </div>
-                        <div class="bg-black/20 p-4 rounded-2xl">
-                            <p class="text-[10px] text-gray-500 uppercase font-bold">İdeal Kilo</p>
-                            <span id="ideal" class="text-xl font-black text-emerald-400">--</span>
-                        </div>
-                    </div>
+        <div class="text-center">
+            <p id="task-counter" class="text-xs text-gray-500 font-bold mb-2 uppercase tracking-widest">GÖREV 1 / 5</p>
+            <div id="card-container">
                 </div>
+        </div>
 
-                <div class="glass p-6">
-                    <h3 class="font-bold mb-4 flex items-center gap-2"><i class="fab fa-youtube text-red-500"></i> Motivasyon Radyosu</h3>
-                    <div class="space-y-2" id="musicList"></div>
-                </div>
+        <div class="flex justify-center gap-8 items-center mt-4">
+            <button onclick="swipe('left')" class="w-16 h-16 rounded-full bg-rose-500/20 text-rose-500 text-2xl border border-rose-500/30 hover:bg-rose-500 hover:text-white transition"><i class="fas fa-times"></i></button>
+            <button onclick="swipe('right')" class="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-500 text-2xl border border-emerald-500/30 hover:bg-emerald-500 hover:text-white transition"><i class="fas fa-check"></i></button>
+        </div>
+
+        <div id="besin-modal" class="hidden fixed inset-0 z-50 bg-black/90 p-6 overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold italic">BESİN DEĞİŞİM KARTI</h3>
+                <button onclick="toggleBesin()" class="text-2xl">&times;</button>
             </div>
-
-            <div class="lg:col-span-2 space-y-8">
-                
-                <div class="glass p-8 border-t-4 border-emerald-500">
-                    <div class="flex justify-between items-start mb-6">
-                        <div>
-                            <h3 class="text-xl font-black italic uppercase tracking-tighter">Hücresel Beslenme & Değişim Kartı</h3>
-                            <p class="text-sm text-gray-400 mt-1">Grade 1/2 Yağlanmayı Geri Çevirme Listesi</p>
-                        </div>
-                        <i class="fas fa-leaf text-3xl text-emerald-500/30"></i>
-                    </div>
-
-                    <div class="grid md:grid-cols-2 gap-6">
-                        <div class="space-y-4">
-                            <h4 class="text-emerald-400 font-bold text-sm border-b border-emerald-500/20 pb-2">Yüksek Kalite Proteinler</h4>
-                            <div id="protein-list" class="space-y-2">
-                                </div>
-                        </div>
-
-                        <div class="space-y-4">
-                            <h4 class="text-red-400 font-bold text-sm border-b border-red-500/20 pb-2">Fruktoz & Karaciğer Düşmanları</h4>
-                            <div id="forbidden-list" class="space-y-2 text-xs opacity-80">
-                                <p class="flex items-center gap-2 text-red-300"><i class="fas fa-times-circle"></i> Hazır Meyve Suları (Yüksek Fruktoz)</p>
-                                <p class="flex items-center gap-2 text-red-300"><i class="fas fa-times-circle"></i> Beyaz Ekmek & Nişastalı Gıdalar</p>
-                                <p class="flex items-center gap-2 text-orange-300"><i class="fas fa-exclamation-triangle"></i> Çok Tatlı Meyveler (Kavun, Üzüm)</p>
-                                <p class="flex items-center gap-2 text-blue-300"><i class="fas fa-info-circle"></i> Karaciğer için Günde 2 Litre Su Şart!</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="glass p-8">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-xl font-bold italic">Zaman Çizelgesi</h3>
-                        <button onclick="share()" class="text-xs bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full border border-emerald-500/30">PAYLAŞ</button>
-                    </div>
-                    <div id="timeline" class="space-y-4"></div>
-                </div>
-
-            </div>
+            <div id="besin-content" class="space-y-4"></div>
         </div>
     </div>
 
     <script>
-        let user = JSON.parse(localStorage.getItem('hepatoProV2'));
-        let currentTaskIdx = 0;
-
-        const tasks = [
-            { h: 7, m: 30, n: "Aç Karnına Kardiyo (Yağ Yakımı)", i: "fa-running", d: "Karaciğerdeki glikojen depolarını boşaltmak için." },
-            { h: 9, m: 0, n: "Yüksek Proteinli Kahvaltı", i: "fa-egg", d: "2 Yumurta + Lor Peyniri + Bol Yeşillik" },
-            { h: 13, m: 0, n: "Karaciğer Dostu Öğle Yemeği", i: "fa-leaf", d: "Haşlama Sebze + Izgara Tavuk/Balık" },
-            { h: 16, m: 30, n: "Metabolik Ara Öğün", i: "fa-coffee", d: "Sade Kahve + 3 Adet Ceviz" },
-            { h: 19, m: 0, n: "Hafif Akşam Kapanışı", i: "fa-moon", d: "Zeytinyağlı Enginar veya Mevsim Salatası" }
+        let user = JSON.parse(localStorage.getItem('hepatoSwipeUser'));
+        let tasks = [
+            { h: 7, m: 30, t: "Aç Karnına Kardiyo", d: "20dk Yürüyüş - Yağ yakımını başlatır.", img: "fa-running" },
+            { h: 9, m: 0, t: "Yüksek Proteinli Kahvaltı", d: "Yumurta + Lor - Karaciğer dostu.", img: "fa-egg" },
+            { h: 13, m: 0, t: "Sebze & Protein Öğle", d: "Izgara Tavuk & Salata - Fruktozsuz.", img: "fa-utensils" },
+            { h: 16, m: 30, t: "Metabolik Ara Öğün", d: "Yeşil Çay & 3 Ceviz - Enzim desteği.", img: "fa-leaf" },
+            { h: 19, m: 0, t: "Hafif Akşam Yemeği", d: "Zeytinyağlı Enginar - Karaciğer temizliği.", img: "fa-moon" }
         ];
 
-        const proteins = {
-            male: [
-                { n: "Izgara Tavuk Göğsü", q: "180g", c: "Yüksek Lösin (Kas korur)" },
-                { n: "Yağsız Dana Eti", q: "150g", c: "Demir & Çinko (Testosteron)" },
-                { n: "Somon / Ton Balığı", q: "200g", c: "Omega-3 (Karaciğer dostu)" },
-                { n: "Lor Peyniri", q: "100g", c: "Gece proteini (Kazein)" }
-            ],
-            female: [
-                { n: "Izgara Hindi Füme", q: "120g", c: "Hafif ve Sindirimi Kolay" },
-                { n: "Beyaz Etli Balık", q: "180g", c: "İyot ve Düşük Kalori" },
-                { n: "Yumurta Beyazı", q: "3 Adet", c: "Saf Protein Kaynağı" },
-                { n: "Mercimek / Baklagil", q: "1 Kase", c: "Bitkisel Lifli Protein" }
-            ]
-        };
+        let currentIdx = 0;
 
-        const playlists = [
-            { n: "Hard Workout Phonk", id: "5p3K6yXGf-c" },
-            { n: "Zen Focus (Mutfak)", id: "MCpE_6M8T_0" }
-        ];
-
-        window.onload = () => { if(user) renderDashboard(); };
-
-        function toggleTheme() {
-            document.body.classList.toggle('dark-mode');
-            document.body.classList.toggle('light-mode');
-        }
-
-        function start() {
+        function initApp() {
             const data = {
                 name: document.getElementById('uName').value,
                 gender: document.getElementById('uGender').value,
-                age: document.getElementById('uAge').value,
                 weight: document.getElementById('uWeight').value,
                 height: document.getElementById('uHeight').value
             };
-            if(!data.name || !data.weight) return alert("Bilgileri doldurun!");
-            localStorage.setItem('hepatoProV2', JSON.stringify(data));
+            if(!data.name) return;
+            localStorage.setItem('hepatoSwipeUser', JSON.stringify(data));
             user = data;
             renderDashboard();
         }
@@ -193,81 +110,99 @@
         function renderDashboard() {
             document.getElementById('setup-screen').classList.add('hidden');
             document.getElementById('main-dashboard').classList.remove('hidden');
-            document.getElementById('userName').innerText = user.name;
-            
-            const avatarSeed = user.gender === 'male' ? 'Felix' : 'Aneka';
-            document.getElementById('avatar').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`;
-
-            // Hesaplamalar
-            const h = user.height / 100;
-            const vki = (user.weight / (h*h)).toFixed(1);
-            document.getElementById('vki').innerText = vki;
-            let ideal = user.gender === 'male' ? 50 + 2.3 * ((user.height/2.54)-60) : 45.5 + 2.3 * ((user.height/2.54)-60);
-            document.getElementById('ideal').innerText = Math.round(ideal) + " kg";
-
-            // Besin Listesi
-            const pList = document.getElementById('protein-list');
-            pList.innerHTML = proteins[user.gender].map(p => `
-                <div class="food-card bg-black/10 p-3 rounded-xl border border-white/5 flex justify-between items-center">
-                    <div>
-                        <p class="text-xs font-bold">${p.n}</p>
-                        <p class="text-[10px] opacity-50">${p.c}</p>
-                    </div>
-                    <span class="bg-emerald-500/20 text-emerald-400 text-[10px] px-2 py-1 rounded-md font-bold">${p.q}</span>
-                </div>
-            `).join('');
-
-            // Müzik
-            document.getElementById('musicList').innerHTML = playlists.map(s => `
-                <div onclick="window.open('https://youtube.com/watch?v=${s.id}')" class="p-3 bg-black/20 rounded-xl flex justify-between items-center cursor-pointer hover:bg-emerald-500/20 transition">
-                    <span class="text-xs font-bold">${s.n}</span>
-                    <i class="fas fa-play text-[10px]"></i>
-                </div>
-            `).join('');
-
-            updateTimeline();
-            setInterval(updateTimeline, 60000);
+            document.getElementById('displayName').innerText = user.name;
+            document.getElementById('avatar').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.gender === 'male' ? 'Felix' : 'Aneka'}`;
+            loadCards();
         }
 
-        function updateTimeline() {
+        function loadCards() {
+            const container = document.getElementById('card-container');
+            container.innerHTML = '';
+            tasks.forEach((task, i) => {
+                if(i < currentIdx) return;
+                const card = document.createElement('div');
+                card.className = 'swipe-card glass p-8 flex flex-col items-center justify-center text-center gap-6 shadow-2xl';
+                card.style.zIndex = tasks.length - i;
+                card.style.transform = `scale(${1 - (i - currentIdx) * 0.05}) translateY(${(i - currentIdx) * 15}px)`;
+                
+                card.innerHTML = `
+                    <div class="status-overlay status-yes">YAPTIM</div>
+                    <div class="status-overlay status-no">PAS</div>
+                    <div class="w-24 h-24 bg-emerald-500/20 rounded-full flex items-center justify-center text-4xl text-emerald-500 border border-emerald-500/30">
+                        <i class="fas ${task.img}"></i>
+                    </div>
+                    <div>
+                        <span class="bg-white/10 px-4 py-1 rounded-full text-xs font-mono font-bold">${String(task.h).padStart(2,'0')}:${String(task.m).padStart(2,'0')}</span>
+                        <h3 class="text-2xl font-black mt-4">${task.t}</h3>
+                        <p class="text-gray-400 text-sm mt-2">${task.d}</p>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            document.getElementById('task-counter').innerText = `GÖREV ${currentIdx + 1} / ${tasks.length}`;
+        }
+
+        function swipe(dir) {
+            const activeTask = tasks[currentIdx];
             const now = new Date();
             const currentMins = now.getHours() * 60 + now.getMinutes();
+            const taskMins = activeTask.h * 60 + activeTask.m;
 
-            tasks.forEach((t, i) => {
-                const tMins = t.h * 60 + t.m;
-                if(currentMins >= tMins && currentMins < tMins + 60) currentTaskIdx = i;
-            });
+            // Zaman Kontrolü
+            if(dir === 'right' && currentMins < taskMins - 15) {
+                alert(`⚠️ Sabırlı ol ${user.name}! Bu görevin saati ${activeTask.h}:${activeTask.m}. Etkili sonuç için zamanında yapmalısın.`);
+                return;
+            }
 
-            const activeTask = tasks[currentTaskIdx];
-            document.getElementById('task-name').innerText = activeTask.n;
-            document.getElementById('task-time').innerText = `${String(activeTask.h).padStart(2,'0')}:${String(activeTask.m).padStart(2,'0')}`;
-            document.getElementById('task-icon').className = `fas ${activeTask.i}`;
-            document.getElementById('action-wrapper').classList.add('action-pulse');
+            const card = document.querySelector('.swipe-card');
+            if(!card) return;
 
-            document.getElementById('timeline').innerHTML = tasks.map((t, i) => `
-                <div class="flex items-center gap-4 p-4 rounded-2xl ${i === currentTaskIdx ? 'bg-emerald-500/20 border border-emerald-500' : 'bg-black/10 opacity-60'}">
-                    <span class="font-mono font-bold text-xs">${String(t.h).padStart(2,'0')}:${String(t.m).padStart(2,'0')}</span>
-                    <div>
-                        <p class="text-sm font-bold">${t.n}</p>
-                        <p class="text-[10px] opacity-70">${t.d}</p>
+            if(dir === 'right') {
+                card.style.transform = 'translateX(500px) rotate(30deg)';
+                card.querySelector('.status-yes').style.opacity = '1';
+            } else {
+                card.style.transform = 'translateX(-500px) rotate(-30deg)';
+                card.querySelector('.status-no').style.opacity = '1';
+            }
+            card.style.opacity = '0';
+
+            setTimeout(() => {
+                currentIdx++;
+                if(currentIdx >= tasks.length) {
+                    alert("Tebrikler! Günlük planı tamamladın. Yarın görüşürüz!");
+                    currentIdx = 0;
+                }
+                loadCards();
+            }, 500);
+        }
+
+        function toggleBesin() {
+            const modal = document.getElementById('besin-modal');
+            modal.classList.toggle('hidden');
+            if(!modal.classList.contains('hidden')) {
+                const isMale = user.gender === 'male';
+                document.getElementById('besin-content').innerHTML = `
+                    <div class="glass p-6 border-l-4 border-emerald-500">
+                        <h4 class="text-emerald-400 font-bold mb-2">PRO-PROTEİN LİSTESİ (${isMale ? 'Erkek' : 'Kadın'})</h4>
+                        <ul class="text-sm space-y-2 opacity-80">
+                            <li>• ${isMale ? '180g Dana/Tavuk (Kas Koruması)' : '120g Hindi/Tavuk (Hafif Sindirim)'}</li>
+                            <li>• 2-3 Yumurta Beyazı (Saf Albümin)</li>
+                            <li>• 1 Kase Lor Peyniri (Karaciğer Rejenerasyonu)</li>
+                        </ul>
                     </div>
-                    ${i < currentTaskIdx ? '<i class="fas fa-check-circle ml-auto text-emerald-500"></i>' : ''}
-                </div>
-            `).join('');
+                    <div class="glass p-6 border-l-4 border-rose-500">
+                        <h4 class="text-rose-500 font-bold mb-2">FRUKTOZ & YASAKLAR</h4>
+                        <ul class="text-sm space-y-2 opacity-80">
+                            <li>• Kesinlikle Paket Meyve Suyu YOK!</li>
+                            <li>• Beyaz Ekmek / Hamur İşi (Grade 1 Tetikleyici)</li>
+                            <li>• Akşam 20:00'den sonra meyve tüketimi sınırlı.</li>
+                        </ul>
+                    </div>
+                `;
+            }
         }
 
-        function taskDone() {
-            alert("Harika! Karaciğerin bu disipline bayılacak. Bir sonraki göreve odaklanıyoruz!");
-            currentTaskIdx = (currentTaskIdx + 1) % tasks.length;
-            updateTimeline();
-        }
-
-        function share() {
-            const msg = `🚀 ${user.name} bugün HepatoFit Pro ile disiplinli ilerliyor. İdeal Kilo Hedefi: ${document.getElementById('ideal').innerText} #Diyet #Sağlık`;
-            navigator.share ? navigator.share({title: 'HepatoFit', text: msg}) : alert("Kopyalandı: " + msg);
-        }
-
-        function resetData() { if(confirm("Tüm veriler silinecek?")) { localStorage.clear(); location.reload(); } }
+        if(user) renderDashboard();
     </script>
 </body>
 </html>
